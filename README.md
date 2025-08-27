@@ -1,7 +1,7 @@
-# Can Temperature Variations Predict Armed Conflict?
+# Can Climate Change Actually Predict Conflict?
 
 ## ⭐ Motivation
-The motivation behind this project stems from a study by the Political Geography Journal that found that [human-induced climate change can encourage more violent behavior](https://www.clisec.uni-hamburg.de/en/pdf/data/nordas-gleditsch-2007-climate-change-and-conflict.pdf). Climate pressures have long been associated with violence, but this project explores whether rising temperatures can actually *predict* conflict occurrence at both the global level and within the Middle East region.  
+The motivation behind this project stems from a study by the Political Geography Journal that found that <a href="https://www.clisec.uni-hamburg.de/en/pdf/data/nordas-gleditsch-2007-climate-change-and-conflict.pdf" target="_blank">human-induced climate change can encourage more violent behavior</a>. Climate pressures have long been associated with violence, but this project explores whether rising temperatures can actually *predict* conflict occurrence at both the global level and within the Middle East region.  
 
 The project aims to answer two core questions:  
 1. **Global:** Can rising global temperatures predict the total number of global conflicts?  
@@ -10,8 +10,8 @@ The project aims to answer two core questions:
 ---
 
 ## 📊 Data Set Up
-- **[Conflict Data](https://ucdp.uu.se/downloads/)** Uppsala Conflict Data Program (UCDP) armed conflict dataset (Middle East and Global).
-- **[Climate Data](https://www.ncei.noaa.gov/cdo-web/datasets):** National Oceanic and Atmospheric Administration’s (NOAA) Global and Middle East temperature dataset.  
+- **<a href="https://ucdp.uu.se/downloads/" target="_blank">Conflict Data</a>:** Uppsala Conflict Data Program (UCDP) armed conflict dataset (Middle East and Global).
+- **<a href="https://www.ncei.noaa.gov/cdo-web/datasets" target="_blank">Climate Data</a>:** National Oceanic and Atmospheric Administration’s (NOAA) Global and Middle East temperature dataset.  
 
 ---
 
