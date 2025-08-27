@@ -1,4 +1,4 @@
-# Can Climate Change Actually Predict Conflict?
+# How Does Human Behvavior Change Under Heat? Temperature-Induced Conflict Predictions.
 
 ## ⭐ Motivation
 The motivation behind this project stems from a study by the Political Geography Journal that found that <a href="https://www.clisec.uni-hamburg.de/en/pdf/data/nordas-gleditsch-2007-climate-change-and-conflict.pdf" target="_blank">human-induced climate change can encourage more violent behavior</a>. Climate pressures have long been associated with violence, but this project explores whether rising temperatures can actually *predict* conflict occurrence at both the global level and within the Middle East region.  
