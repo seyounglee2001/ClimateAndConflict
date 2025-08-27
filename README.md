@@ -1,7 +1,7 @@
 # Can Temperature Variations Predict Armed Conflict?
 
 ## ⭐ Motivation
-The motivation behind this project stems from a study by the Political Geography Journal that found that human-induced climate change can encourage more violent behavior. While climate pressures such as water scarcity, food insecurity, and economic instability have long been associated with violence, this project explores whether rising temperatures can actually *predict* conflict occurrence at both the global level and within the Middle East region.  
+The motivation behind this project stems from a study by the Political Geography Journal that found that human-induced climate change can encourage more violent behavior. Climate pressures have long been associated with violence, but this project explores whether rising temperatures can actually *predict* conflict occurrence at both the global level and within the Middle East region.  
 
 The project aims to answer two core questions:  
 1. **Global:** Can rising global temperatures predict the total number of global conflicts?  
@@ -17,15 +17,13 @@ The project aims to answer two core questions:
 
 ## 🌡️ Approach to Predicting Conflict with Temperature
 1. **Time Series Model:**
-   - Motivation:
-   - Global: Implemented SARIMA(1,1,1)(2,0,0)[12] and SARIMA(2,1,1)(2,0,0)[12] models.
-   - Middle East: Applied SARIMA(1,1,2)(0,0,2)[12] to regional temperature and conflict data.  
+   - Purpose: Captures patterns, seasonality, and autocorrelation over time. This shows you whether the temporal dynamics are statistically significant. The paper runs diagnostics on the models to test its reliance.
 
-3. **Time Series Regression Model:**  
-   - Motivation:
-
-4. **Forecast Model:**  
-   - Motivation:
+2. **Time Series Regression Model:**  
+   - Purpose: To quantify the relationship between temperature and conflict over time, while controlling for other covariates. This gives you a measure of how strong the relationship is. Diagnostics on the model were applied as well as significance testing.
+  
+3. **Forecast Model:**  
+   - Purpose: To predict future conflict levels based on the fitted model. This determines whether the predictions are reliable visually as well as providing insights for uncertainty of forecasts.
 
 ---
 
