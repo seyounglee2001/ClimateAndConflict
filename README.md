@@ -10,8 +10,8 @@ The project aims to answer two core questions:
 ---
 
 ## 📊 Data Set Up
-- **<a href="https://ucdp.uu.se/downloads/" target="_blank">Conflict Data</a>:** Uppsala Conflict Data Program (UCDP) armed conflict dataset (Middle East and Global).
-- **<a href="https://www.ncei.noaa.gov/cdo-web/datasets" target="_blank">Climate Data</a>:** National Oceanic and Atmospheric Administration’s (NOAA) Global and Middle East temperature dataset.  
+- **<a href="https://ucdp.uu.se/downloads/" target="_blank">Conflict Data</a>:** Uppsala Conflict Data Program (UCDP) armed conflict dataset (Middle East and Global). The armed conflict data was sourced from Uppsala University’s Uppsala Conflict Data Program (UCDP), a leading provider of organized violence data. UCDP defines armed conflict as a contested incompatibility involving at least one state actor, resulting in 25 or more battle-related deaths within a calendar year.
+- **<a href="https://www.ncei.noaa.gov/cdo-web/datasets" target="_blank">Climate Data</a>:** National Oceanic and Atmospheric Administration’s (NOAA) Global and Middle East temperature dataset. The global values are land and ocean temperature anomalies with respect to the 1901-2000 average, and the regional values (Middle East) are land and ocean temperature anomalies with respect to the 1910-2000 average. 
 
 ---
 
