@@ -1,0 +1,537 @@
+---
+title: "Data Cleaning - Global and Regional"
+output: pdf_document
+---
+
+```{r, include=FALSE}
+# knitr::opts_chunk$set(eval=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+# library(knitr)
+# opts_chunk$set(tidy = TRUE, eval=FALSE)
+```
+
+```{r, echo = F}
+library(knitr)
+opts_chunk$set(eval=FALSE)
+```
+
+```{r message = F, warning = F, echo = F}
+################# Load Packages #################
+library(tidyverse)
+library(reshape2)
+library(data.table)
+library(purrr)
+library(janitor)
+library(gsubfn)
+library(huxtable)
+library(jtools)
+library(flextable)
+library(ggplot2)
+library(ggthemes)
+library(ggfortify)
+library(scales)
+library(interplot)
+library(broom)
+library(mfx)
+library(stargazer)
+library(gridExtra)
+library(grid)
+library(webshot)
+library(zoo)
+library(knitr)
+library(xtable)
+library(astsa)
+library(forecast)
+library(kableExtra)
+library(vars)
+library(fGarch)
+library(ivs)
+library(clock)
+```
+
+```{r}
+################# Import Data #################
+
+ucdp <- c("UcdpPrioConflict_v23_1.csv")
+ucdp <- lapply(ucdp, read.csv) %>% bind_rows()
+
+global.temp <- c("Global Land Temperature.csv")
+global.temp <- lapply(global.temp, read.csv) %>% bind_rows()
+global.temp <- ts(global.temp$Anomaly, start = c(1946, 3), frequency = 12)
+
+africa.temp <- c("Africa Land Temperature.csv")
+africa.temp <- lapply(africa.temp, read.csv) %>% bind_rows()
+africa.temp <- ts(africa.temp$Anomaly, start = c(1946, 3), frequency = 12)
+
+globalLO.temp <- c("Global Land and Ocean Series.csv")
+globalLO.temp <- lapply(globalLO.temp, read.csv) %>% bind_rows()
+globalLO.temp <- ts(globalLO.temp$Anomaly, start = c(1946, 3), frequency = 12)
+
+MELO.temp <- c("Middle East Land and Ocean Series.csv")
+MELO.temp <- lapply(MELO.temp, read.csv) %>% bind_rows()
+MELO.temp <- ts(MELO.temp$Anomaly, start = c(1946, 3), frequency = 12)
+
+AfricaLO.temp <- c("Africa Land and Ocean Series.csv")
+AfricaLO.temp <- lapply(AfricaLO.temp, read.csv) %>% bind_rows()
+AfricaLO.temp <- ts(AfricaLO.temp$Anomaly, start = c(1946, 3), frequency = 12)
+```
+
+```{r, tidy=TRUE}
+options(width = 30)
+matrix(runif(50), ncol = 20)
+################# Data Cleaning by Geographical Area - Temperature #################
+
+globalLO.temp <- globalLO.temp+0.001
+
+MELO.temp.rat <- MELO.temp/globalLO.temp
+AfricaLO.temp.rat <- AfricaLO.temp/globalLO.temp
+
+allLO.temp <- ts.union(globalLO.temp, MELO.temp, AfricaLO.temp)
+MENA.temp.rat <- ts.union(MELO.temp.rat, AfricaLO.temp.rat)
+
+
+allLo.temp.plot <- autoplot(allLO.temp) +
+  labs(title= "Global, Middle East, and Africa \n Land and Ocean Average Temperature Anomalies", 
+       x = "Time", y = "Temperature (ºC)", col='Region') +
+  scale_color_manual(labels = c("Global", "Middle East", "Africa"), values = c("#f8766d", "#c5e89f", "#9fc5e8")) +
+  scale_x_continuous(breaks = seq(1940, 2030, by=10), limits=c(1946,2022)) +
+  scale_y_continuous(breaks = seq(-6, 6, by=2), limits=c(-5,5)) +
+  theme_minimal() +
+  theme(text=element_text(family="Times New Roman", size=14), plot.title = element_text(hjust = 0.5), legend.position="bottom") +
+  aes(group=rev(series))
+ggsave("Global, Middle East, and Africa Land and Ocean Average Temperature Anomalies.png", allLo.temp.plot, width=15, height=9)
+
+
+globalLO.temp.plot <- autoplot(globalLO.temp, col="#f8766d") +
+  labs(title= "Global\nLand and Ocean Average Temperature Anomalies", 
+       x = "Time", y = "Temperature (ºC)") +
+  scale_x_continuous(breaks = seq(1940, 2030, by=10), limits=c(1946,2022)) +
+  scale_y_continuous(breaks = seq(-6, 6, by=2), limits=c(-5,5)) +
+  theme_minimal() +
+  theme(text=element_text(family="Times New Roman", size=14), plot.title = element_text(hjust = 0.5), legend.position="bottom")
+ggsave("Global Land and Ocean Average Temperature Anomalies.png", globalLO.temp.plot, width=6, height=4)
+
+MELO.temp.plot <- autoplot(MELO.temp, col="#00ba38") +
+  labs(title= "Middle East\nLand and Ocean Average Temperature Anomalies", 
+       x = "Time", y = "Temperature (ºC)") +
+  scale_x_continuous(breaks = seq(1940, 2030, by=10), limits=c(1946,2022)) +
+  scale_y_continuous(breaks = seq(-6, 6, by=2), limits=c(-5,5)) +
+  theme_minimal() +
+  theme(text=element_text(family="Times New Roman", size=14), plot.title = element_text(hjust = 0.5), legend.position="bottom")
+ggsave("Middle East Land and Ocean Average Temperature Anomalies.png", MELO.temp.plot, width=6, height=4)
+
+AfricaLO.temp.plot <- autoplot(AfricaLO.temp, col="#619cff") +
+  labs(title= "Africa\nLand and Ocean Average Temperature Anomalies", 
+       x = "Time", y = "Temperature (ºC)") +
+  scale_x_continuous(breaks = seq(1940, 2030, by=10), limits=c(1946,2022)) +
+  scale_y_continuous(breaks = seq(-6, 6, by=2), limits=c(-5,5)) +
+  theme_minimal() +
+  theme(text=element_text(family="Times New Roman", size=14), plot.title = element_text(hjust = 0.5), legend.position="bottom")
+ggsave("Africa Land and Ocean Average Temperature Anomalies.png", AfricaLO.temp.plot, width=6, height=4)
+```
+
+```{r}
+################# Data Cleaning by Conflict #################
+
+# One line per conflict with unique id and start_date2 (intermittant conflicts will occupy multiple lines)
+ucdp.conflict <- ucdp
+ucdp.conflict$tally <- 1
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id, start_date2) %>% mutate(ticker = cumsum(tally))
+
+ucdp.conflict <- ucdp.conflict%>% group_by(ticker) %>% mutate(conflict_id.unique = cumsum(tally))
+ucdp.conflict$conflict_id.unique <- ifelse(ucdp.conflict$ticker > 1, NA, ucdp.conflict$conflict_id.unique)
+
+i <- 1
+for(i in 1:53) {
+  ucdp.conflict$conflict_id.unique <- ifelse(ucdp.conflict$ticker > 1, lag(ucdp.conflict$conflict_id.unique), ucdp.conflict$conflict_id.unique)
+  i <- i+1
+}
+
+# Intensity level min and max
+ucdp.conflict <- merge(ucdp.conflict,aggregate(intensity_level~conflict_id.unique,ucdp.conflict,FUN=min),all.x=TRUE,by="conflict_id.unique")
+names(ucdp.conflict)[names(ucdp.conflict) == 'intensity_level.y'] <- 'intensity_level_min'
+ucdp.conflict <- merge(ucdp.conflict,aggregate(intensity_level.x~conflict_id.unique,ucdp.conflict,FUN=max),all.x=TRUE,by="conflict_id.unique")
+names(ucdp.conflict)[names(ucdp.conflict) == 'intensity_level.x.y'] <- 'intensity_level_max'
+
+# Binaries for region (1-5)
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region == "1", 1, 0)
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region == "1, 3, 5", 1, ucdp.conflict$region1)
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region == "1, 3", 1, ucdp.conflict$region1)
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region == "1, 2", 1, ucdp.conflict$region1)
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region == "1, 4", 1, ucdp.conflict$region1)
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region == "1, 5", 1, ucdp.conflict$region1)
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region == "1, 2, 3, 5", 1, ucdp.conflict$region1)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(region1 = cumsum(region1))
+ucdp.conflict$region1 <- ifelse(ucdp.conflict$region1 > 0 , 1, 0)
+
+
+ucdp.conflict$region2 <- ifelse(ucdp.conflict$region == "2", 1, 0)
+ucdp.conflict$region2 <- ifelse(ucdp.conflict$region == "1, 2", 1, ucdp.conflict$region2)
+ucdp.conflict$region2 <- ifelse(ucdp.conflict$region == "1, 2, 3, 5", 1, ucdp.conflict$region2)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(region2 = cumsum(region2))
+ucdp.conflict$region2 <- ifelse(ucdp.conflict$region2 > 0 , 1, 0)
+
+ucdp.conflict$region3 <- ifelse(ucdp.conflict$region == "3", 1, 0)
+ucdp.conflict$region3 <- ifelse(ucdp.conflict$region == "1, 3, 5", 1, ucdp.conflict$region3)
+ucdp.conflict$region3 <- ifelse(ucdp.conflict$region == "1, 3", 1, ucdp.conflict$region3)
+ucdp.conflict$region3 <- ifelse(ucdp.conflict$region == "1, 2, 3, 5", 1, ucdp.conflict$region3)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(region3 = cumsum(region3))
+ucdp.conflict$region3 <- ifelse(ucdp.conflict$region3 > 0 , 1, 0)
+
+ucdp.conflict$region4 <- ifelse(ucdp.conflict$region == "4", 1, 0)
+ucdp.conflict$region4 <- ifelse(ucdp.conflict$region == "1, 4", 1, ucdp.conflict$region4)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(region4 = cumsum(region4))
+ucdp.conflict$region4 <- ifelse(ucdp.conflict$region4 > 0 , 1, 0)
+
+ucdp.conflict$region5 <- ifelse(ucdp.conflict$region == "5", 1, 0)
+ucdp.conflict$region5 <- ifelse(ucdp.conflict$region == "1, 3, 5", 1, ucdp.conflict$region5)
+ucdp.conflict$region5 <- ifelse(ucdp.conflict$region == "1, 5", 1, ucdp.conflict$region5)
+ucdp.conflict$region5 <- ifelse(ucdp.conflict$region == "1, 2, 3, 5", 1, ucdp.conflict$region5)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(region5 = cumsum(region5))
+ucdp.conflict$region5 <- ifelse(ucdp.conflict$region5 > 0 , 1, 0)
+
+ucdp.conflict$region24 <- ifelse(ucdp.conflict$region == "2", 1, 0)
+ucdp.conflict$region24 <- ifelse(ucdp.conflict$region == "1, 2", 1, ucdp.conflict$region24)
+ucdp.conflict$region24 <- ifelse(ucdp.conflict$region == "1, 2, 3, 5", 1, ucdp.conflict$region24)
+ucdp.conflict$region24 <- ifelse(ucdp.conflict$region == "4", 1, ucdp.conflict$region24)
+ucdp.conflict$region24 <- ifelse(ucdp.conflict$region == "1, 4", 1, ucdp.conflict$region24)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(region24 = cumsum(region24))
+ucdp.conflict$region24 <- ifelse(ucdp.conflict$region24 > 0 , 1, 0)
+
+ucdp.conflict$region.multi <- ucdp.conflict$region1+ucdp.conflict$region2+ucdp.conflict$region3+ucdp.conflict$region4+ucdp.conflict$region5
+ucdp.conflict$region.multi <- ifelse(ucdp.conflict$region.multi > 1, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(region.multi = cumsum(region.multi))
+ucdp.conflict$region.multi <- ifelse(ucdp.conflict$region.multi > 0 , 1, 0)
+
+# Binaries for type of conflict (1-4)
+ucdp.conflict$type_of_conflict1 <- ifelse(ucdp.conflict$type_of_conflict == 1, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(type_of_conflict1 = cumsum(type_of_conflict1))
+ucdp.conflict$type_of_conflict1 <- ifelse(ucdp.conflict$type_of_conflict1 > 0 , 1, 0)
+
+ucdp.conflict$type_of_conflict2 <- ifelse(ucdp.conflict$type_of_conflict == 2, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(type_of_conflict2 = cumsum(type_of_conflict2))
+ucdp.conflict$type_of_conflict2 <- ifelse(ucdp.conflict$type_of_conflict2 > 0 , 1, 0)
+
+ucdp.conflict$type_of_conflict3 <- ifelse(ucdp.conflict$type_of_conflict == 3, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(type_of_conflict3 = cumsum(type_of_conflict3))
+ucdp.conflict$type_of_conflict3 <- ifelse(ucdp.conflict$type_of_conflict3 > 0 , 1, 0)
+
+ucdp.conflict$type_of_conflict4 <- ifelse(ucdp.conflict$type_of_conflict == 4, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(type_of_conflict4 = cumsum(type_of_conflict4))
+ucdp.conflict$type_of_conflict4 <- ifelse(ucdp.conflict$type_of_conflict4 > 0 , 1, 0)
+
+# Binaries for incompatibility (1-3)
+ucdp.conflict$incompatibility1 <- ifelse(ucdp.conflict$incompatibility == 1, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(incompatibility1 = cumsum(incompatibility1))
+ucdp.conflict$incompatibility1 <- ifelse(ucdp.conflict$incompatibility1 > 0 , 1, 0)
+
+ucdp.conflict$incompatibility2 <- ifelse(ucdp.conflict$incompatibility == 2, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(incompatibility2 = cumsum(incompatibility2))
+ucdp.conflict$incompatibility2 <- ifelse(ucdp.conflict$incompatibility2 > 0 , 1, 0)
+
+ucdp.conflict$incompatibility3 <- ifelse(ucdp.conflict$incompatibility == 3, 1, 0)
+ucdp.conflict <- ucdp.conflict%>% group_by(conflict_id.unique) %>% mutate(incompatibility3 = cumsum(incompatibility3))
+ucdp.conflict$incompatibility3 <- ifelse(ucdp.conflict$incompatibility3 > 0 , 1, 0)
+
+# One line per conflict
+ucdp.conflict <- ucdp.conflict %>% group_by(conflict_id.unique) %>% top_n(1, ticker)
+ucdp.conflict <- ucdp.conflict %>% dplyr::select(conflict_id.unique, conflict_id, start_date, start_date2, ep_end, ep_end_date,
+                                        region1, region2, region3, region4, region5, region24, region.multi,
+                                        type_of_conflict1, type_of_conflict2, type_of_conflict3, type_of_conflict4,
+                                        incompatibility1, incompatibility2, incompatibility3,
+                                        intensity_level_min, intensity_level_max, cumulative_intensity, location)
+```
+
+```{r}
+################# Data Cleaning by Month - Time Series #################
+
+# One month (conflict encoded as 1 if more than 25 conflict related deaths)
+# Conflicts that do not end during the observed period are coded as 2021-12 (end of observed period)
+ucdp.month <- ucdp.conflict
+ucdp.month$start_month <- format(as.Date(ucdp.month$start_date2), "%Y-%m")
+ucdp.month$end_month <- format(as.Date(ucdp.month$ep_end_date), "%Y-%m")
+ucdp.month$end_month <- ifelse(is.na(ucdp.month$end_month), "2021-12", ucdp.month$end_month)
+
+month <- seq(min(as.yearmon(ucdp.month$start_month)), max(as.yearmon(ucdp.month$end_month)), 1/12)
+month <- as.numeric(format(month, "%Y%m"))
+ucdp.ts <- as.data.frame(month)
+ucdp.start.ts <- as.data.frame(month)
+
+ucdp.month$start_month <- format(as.Date(ucdp.month$start_date2), "%Y%m")
+ucdp.month$start_month <- as.numeric(ucdp.month$start_month)
+ucdp.month$end_month <- format(as.Date(ucdp.month$ep_end_date), "%Y%m")
+ucdp.month$end_month <- ifelse(is.na(ucdp.month$end_month), "202112", ucdp.month$end_month)
+ucdp.month$end_month <- as.numeric(ucdp.month$end_month)
+
+i <- 1
+ucdp.ts$tally <- 0
+for(i in 1:nrow(ucdp.month)) {
+  subset <- ucdp.month[i,]
+  ucdp.ts$tally <- ifelse(month >= subset$start_month & month <= subset$end_month, ucdp.ts$tally+1, ucdp.ts$tally)
+  i <- i+1
+}
+rm(subset, i)
+
+ucdp.ts <- ts(ucdp.ts$tally, start = c(1946, 3), frequency = 12)
+
+
+i <- 1
+ucdp.start.ts$tally <- 0
+for(i in 1:nrow(ucdp.month)) {
+  subset <- ucdp.month[i,]
+  ucdp.start.ts$tally <- ifelse(month == subset$start_month, ucdp.start.ts$tally+1, ucdp.start.ts$tally)
+  i <- i+1
+}
+rm(subset, i, month)
+ucdp.start.ts <- ts(ucdp.start.ts$tally, start = c(1946, 3), frequency = 12)
+```
+
+```{r}
+################# Regional Data Analysis #################
+
+# Conflict occured in Region 1 (Europe) for at least part of the time
+ucdp.month.r1 <- ucdp.conflict[(ucdp.conflict$region1 == 1),]
+ucdp.month.r1$start_month <- format(as.Date(ucdp.month.r1$start_date2), "%Y-%m")
+ucdp.month.r1$end_month <- format(as.Date(ucdp.month.r1$ep_end_date), "%Y-%m")
+ucdp.month.r1$end_month <- ifelse(is.na(ucdp.month.r1$end_month), "2021-12", ucdp.month.r1$end_month)
+
+month <- seq(min(as.yearmon(ucdp.month.r1$start_month)), max(as.yearmon(ucdp.month.r1$end_month)), 1/12)
+month <- as.numeric(format(month, "%Y%m"))
+ucdp.ts.r1 <- as.data.frame(month)
+
+ucdp.month.r1$start_month <- format(as.Date(ucdp.month.r1$start_date2), "%Y%m")
+ucdp.month.r1$start_month <- as.numeric(ucdp.month.r1$start_month)
+ucdp.month.r1$end_month <- format(as.Date(ucdp.month.r1$ep_end_date), "%Y%m")
+ucdp.month.r1$end_month <- ifelse(is.na(ucdp.month.r1$end_month), "202112", ucdp.month.r1$end_month)
+ucdp.month.r1$end_month <- as.numeric(ucdp.month.r1$end_month)
+
+i <- 1
+ucdp.ts.r1$tally <- 0
+for(i in 1:nrow(ucdp.month.r1)) {
+  subset <- ucdp.month.r1[i,]
+  ucdp.ts.r1$tally <- ifelse(month >= subset$start_month & month <= subset$end_month, ucdp.ts.r1$tally+1, ucdp.ts.r1$tally)
+  i <- i+1
+}
+rm(subset, i, month)
+
+ucdp.ts.r1 <- ts(ucdp.ts.r1$tally, start = c(1946, 3), frequency = 12)
+
+
+# Conflict occured in Region 2 (Middle East) for at least part of the time
+ucdp.month.r2 <- ucdp.conflict[(ucdp.conflict$region2 == 1),]
+ucdp.month.r2$start_month <- format(as.Date(ucdp.month.r2$start_date2), "%Y-%m")
+ucdp.month.r2$end_month <- format(as.Date(ucdp.month.r2$ep_end_date), "%Y-%m")
+ucdp.month.r2$end_month <- ifelse(is.na(ucdp.month.r2$end_month), "2021-12", ucdp.month.r2$end_month)
+
+ucdp.month$start_month <- format(as.Date(ucdp.month$start_date2), "%Y-%m")
+ucdp.month$end_month <- format(as.Date(ucdp.month$ep_end_date), "%Y-%m")
+ucdp.month$end_month <- ifelse(is.na(ucdp.month$end_month), "2021-12", ucdp.month$end_month)
+
+month <- seq(min(as.yearmon(ucdp.month$start_month)), max(as.yearmon(ucdp.month$end_month)), 1/12)
+month <- as.numeric(format(month, "%Y%m"))
+ucdp.ts.r2 <- as.data.frame(month)
+ucdp.start.ts.r2 <- as.data.frame(month)
+
+ucdp.month.r2$start_month <- format(as.Date(ucdp.month.r2$start_date2), "%Y%m")
+ucdp.month.r2$start_month <- as.numeric(ucdp.month.r2$start_month)
+ucdp.month.r2$end_month <- format(as.Date(ucdp.month.r2$ep_end_date), "%Y%m")
+ucdp.month.r2$end_month <- ifelse(is.na(ucdp.month.r2$end_month), "202112", ucdp.month.r2$end_month)
+ucdp.month.r2$end_month <- as.numeric(ucdp.month.r2$end_month)
+
+i <- 1
+ucdp.ts.r2$tally <- 0
+for(i in 1:nrow(ucdp.month.r2)) {
+  subset <- ucdp.month.r2[i,]
+  ucdp.ts.r2$tally <- ifelse(month >= subset$start_month & month <= subset$end_month, ucdp.ts.r2$tally+1, ucdp.ts.r2$tally)
+  i <- i+1
+}
+rm(subset, i)
+
+ucdp.ts.r2 <- ts(ucdp.ts.r2$tally, start = c(1946, 3), frequency = 12)
+
+
+i <- 1
+ucdp.start.ts.r2$tally <- 0
+for(i in 1:nrow(ucdp.month.r2)) {
+  subset <- ucdp.month.r2[i,]
+  ucdp.start.ts.r2$tally <- ifelse(month == subset$start_month, ucdp.start.ts.r2$tally+1, ucdp.start.ts.r2$tally)
+  i <- i+1
+}
+rm(subset, i, month)
+
+ucdp.start.ts.r2 <- ts(ucdp.start.ts.r2$tally, start = c(1946, 3), frequency = 12)
+
+# Conflict occured in Region 3 (Asia) for at least part of the time
+ucdp.month.r3 <- ucdp.conflict[(ucdp.conflict$region3 == 1),]
+ucdp.month.r3$start_month <- format(as.Date(ucdp.month.r3$start_date2), "%Y-%m")
+ucdp.month.r3$end_month <- format(as.Date(ucdp.month.r3$ep_end_date), "%Y-%m")
+ucdp.month.r3$end_month <- ifelse(is.na(ucdp.month.r3$end_month), "2021-12", ucdp.month.r3$end_month)
+
+ucdp.month$start_month <- format(as.Date(ucdp.month$start_date2), "%Y-%m")
+ucdp.month$end_month <- format(as.Date(ucdp.month$ep_end_date), "%Y-%m")
+ucdp.month$end_month <- ifelse(is.na(ucdp.month$end_month), "2021-12", ucdp.month$end_month)
+
+month <- seq(min(as.yearmon(ucdp.month$start_month)), max(as.yearmon(ucdp.month$end_month)), 1/12)
+month <- as.numeric(format(month, "%Y%m"))
+ucdp.ts.r3 <- as.data.frame(month)
+
+ucdp.month.r3$start_month <- format(as.Date(ucdp.month.r3$start_date2), "%Y%m")
+ucdp.month.r3$start_month <- as.numeric(ucdp.month.r3$start_month)
+ucdp.month.r3$end_month <- format(as.Date(ucdp.month.r3$ep_end_date), "%Y%m")
+ucdp.month.r3$end_month <- ifelse(is.na(ucdp.month.r3$end_month), "202112", ucdp.month.r3$end_month)
+ucdp.month.r3$end_month <- as.numeric(ucdp.month.r3$end_month)
+
+i <- 1
+ucdp.ts.r3$tally <- 0
+for(i in 1:nrow(ucdp.month.r3)) {
+  subset <- ucdp.month.r3[i,]
+  ucdp.ts.r3$tally <- ifelse(month >= subset$start_month & month <= subset$end_month, ucdp.ts.r3$tally+1, ucdp.ts.r3$tally)
+  i <- i+1
+}
+rm(subset, i, month)
+
+ucdp.ts.r3 <- ts(ucdp.ts.r3$tally, start = c(1946, 3), frequency = 12)
+
+# Conflict occured in Region 4 (Africa) for at least part of the time
+ucdp.month.r4 <- ucdp.conflict[(ucdp.conflict$region4 == 1),]
+ucdp.month.r4$start_month <- format(as.Date(ucdp.month.r4$start_date2), "%Y-%m")
+ucdp.month.r4$end_month <- format(as.Date(ucdp.month.r4$ep_end_date), "%Y-%m")
+ucdp.month.r4$end_month <- ifelse(is.na(ucdp.month.r4$end_month), "2021-12", ucdp.month.r4$end_month)
+
+ucdp.month$start_month <- format(as.Date(ucdp.month$start_date2), "%Y-%m")
+ucdp.month$end_month <- format(as.Date(ucdp.month$ep_end_date), "%Y-%m")
+ucdp.month$end_month <- ifelse(is.na(ucdp.month$end_month), "2021-12", ucdp.month$end_month)
+
+month <- seq(min(as.yearmon(ucdp.month$start_month)), max(as.yearmon(ucdp.month$end_month)), 1/12)
+month <- as.numeric(format(month, "%Y%m"))
+ucdp.ts.r4 <- as.data.frame(month)
+ucdp.start.ts.r4 <- as.data.frame(month)
+
+ucdp.month.r4$start_month <- format(as.Date(ucdp.month.r4$start_date2), "%Y%m")
+ucdp.month.r4$start_month <- as.numeric(ucdp.month.r4$start_month)
+ucdp.month.r4$end_month <- format(as.Date(ucdp.month.r4$ep_end_date), "%Y%m")
+ucdp.month.r4$end_month <- ifelse(is.na(ucdp.month.r4$end_month), "202112", ucdp.month.r4$end_month)
+ucdp.month.r4$end_month <- as.numeric(ucdp.month.r4$end_month)
+
+i <- 1
+ucdp.ts.r4$tally <- 0
+for(i in 1:nrow(ucdp.month.r4)) {
+  subset <- ucdp.month.r4[i,]
+  ucdp.ts.r4$tally <- ifelse(month >= subset$start_month & month <= subset$end_month, ucdp.ts.r4$tally+1, ucdp.ts.r4$tally)
+  i <- i+1
+}
+rm(subset, i)
+
+ucdp.ts.r4 <- ts(ucdp.ts.r4$tally, start = c(1946, 3), frequency = 12)
+
+
+i <- 1
+ucdp.start.ts.r4$tally <- 0
+for(i in 1:nrow(ucdp.month.r4)) {
+  subset <- ucdp.month.r4[i,]
+  ucdp.start.ts.r4$tally <- ifelse(month == subset$start_month, ucdp.start.ts.r4$tally+1, ucdp.start.ts.r4$tally)
+  i <- i+1
+}
+rm(subset, i, month)
+
+ucdp.start.ts.r4 <- ts(ucdp.start.ts.r4$tally, start = c(1946, 3), frequency = 12)
+
+# Conflict occured in Region 5 (Americas) for at least part of the time
+ucdp.month.r5 <- ucdp.conflict[(ucdp.conflict$region5 == 1),]
+ucdp.month.r5$start_month <- format(as.Date(ucdp.month.r5$start_date2), "%Y-%m")
+ucdp.month.r5$end_month <- format(as.Date(ucdp.month.r5$ep_end_date), "%Y-%m")
+ucdp.month.r5$end_month <- ifelse(is.na(ucdp.month.r5$end_month), "2021-12", ucdp.month.r5$end_month)
+
+ucdp.month$start_month <- format(as.Date(ucdp.month$start_date2), "%Y-%m")
+ucdp.month$end_month <- format(as.Date(ucdp.month$ep_end_date), "%Y-%m")
+ucdp.month$end_month <- ifelse(is.na(ucdp.month$end_month), "2021-12", ucdp.month$end_month)
+
+month <- seq(min(as.yearmon(ucdp.month$start_month)), max(as.yearmon(ucdp.month$end_month)), 1/12)
+month <- as.numeric(format(month, "%Y%m"))
+ucdp.ts.r5 <- as.data.frame(month)
+
+ucdp.month.r5$start_month <- format(as.Date(ucdp.month.r5$start_date2), "%Y%m")
+ucdp.month.r5$start_month <- as.numeric(ucdp.month.r5$start_month)
+ucdp.month.r5$end_month <- format(as.Date(ucdp.month.r5$ep_end_date), "%Y%m")
+ucdp.month.r5$end_month <- ifelse(is.na(ucdp.month.r5$end_month), "202112", ucdp.month.r5$end_month)
+ucdp.month.r5$end_month <- as.numeric(ucdp.month.r5$end_month)
+
+i <- 1
+ucdp.ts.r5$tally <- 0
+for(i in 1:nrow(ucdp.month.r5)) {
+  subset <- ucdp.month.r5[i,]
+  ucdp.ts.r5$tally <- ifelse(month >= subset$start_month & month <= subset$end_month, ucdp.ts.r5$tally+1, ucdp.ts.r5$tally)
+  i <- i+1
+}
+rm(subset, i, month)
+
+ucdp.ts.r5 <- ts(ucdp.ts.r5$tally, start = c(1946, 3), frequency = 12)
+
+# Conflict occured in Regions 2 and 4 (Middle East and Africa) for at least part of the time
+ucdp.month.r24 <- ucdp.conflict[(ucdp.conflict$region24 == 1),]
+ucdp.month.r24$start_month <- format(as.Date(ucdp.month.r24$start_date2), "%Y-%m")
+ucdp.month.r24$end_month <- format(as.Date(ucdp.month.r24$ep_end_date), "%Y-%m")
+ucdp.month.r24$end_month <- ifelse(is.na(ucdp.month.r24$end_month), "2021-12", ucdp.month.r24$end_month)
+
+ucdp.month$start_month <- format(as.Date(ucdp.month$start_date2), "%Y-%m")
+ucdp.month$end_month <- format(as.Date(ucdp.month$ep_end_date), "%Y-%m")
+ucdp.month$end_month <- ifelse(is.na(ucdp.month$end_month), "2021-12", ucdp.month$end_month)
+
+month <- seq(min(as.yearmon(ucdp.month$start_month)), max(as.yearmon(ucdp.month$end_month)), 1/12)
+month <- as.numeric(format(month, "%Y%m"))
+ucdp.ts.r24 <- as.data.frame(month)
+ucdp.start.ts.r24 <- as.data.frame(month)
+
+ucdp.month.r24$start_month <- format(as.Date(ucdp.month.r24$start_date2), "%Y%m")
+ucdp.month.r24$start_month <- as.numeric(ucdp.month.r24$start_month)
+ucdp.month.r24$end_month <- format(as.Date(ucdp.month.r24$ep_end_date), "%Y%m")
+ucdp.month.r24$end_month <- ifelse(is.na(ucdp.month.r24$end_month), "202112", ucdp.month.r24$end_month)
+ucdp.month.r24$end_month <- as.numeric(ucdp.month.r24$end_month)
+
+i <- 1
+ucdp.ts.r24$tally <- 0
+for(i in 1:nrow(ucdp.month.r24)) {
+  subset <- ucdp.month.r24[i,]
+  ucdp.ts.r24$tally <- ifelse(month >= subset$start_month & month <= subset$end_month, ucdp.ts.r24$tally+1, ucdp.ts.r24$tally)
+  i <- i+1
+}
+rm(subset, i)
+
+ucdp.ts.r24 <- ts(ucdp.ts.r24$tally, start = c(1946, 3), frequency = 12)
+
+
+i <- 1
+ucdp.start.ts.r24$tally <- 0
+for(i in 1:nrow(ucdp.month.r24)) {
+  subset <- ucdp.month.r24[i,]
+  ucdp.start.ts.r24$tally <- ifelse(month == subset$start_month, ucdp.start.ts.r24$tally+1, ucdp.start.ts.r24$tally)
+  i <- i+1
+}
+rm(subset, i, month)
+
+ucdp.start.ts.r24 <- ts(ucdp.start.ts.r24$tally, start = c(1946, 3), frequency = 12)
+# Based on research about global warming significantly affection the Sahel, we expect that regional temperature
+# will significantly affect the MENA regions (Middle East - Region 2 and North Africa - Region 4).
+```
+
+```{r}
+################# Data Outputs #################
+
+write.csv(ucdp.ts,"Global Conflict Data.csv",row.names=FALSE)
+write.csv(ucdp.ts.r2,"Middle East Conflict Data.csv",row.names=FALSE)
+write.csv(ucdp.ts.r4,"Africa Conflict Data.csv",row.names=FALSE)
+write.csv(ucdp.ts.r24,"Middle East and Africa Conflict Data.csv",row.names=FALSE)
+
+write.csv(ucdp.start.ts,"Global Conflict Data - Start.csv",row.names=FALSE)
+write.csv(ucdp.start.ts.r2,"Middle East Conflict Data - Start.csv",row.names=FALSE)
+write.csv(ucdp.start.ts.r4,"Africa Conflict Data - Start.csv",row.names=FALSE)
+write.csv(ucdp.start.ts.r24,"Middle East and Africa Conflict Data - Start.csv",row.names=FALSE)
+
+write.csv(global.temp,"Global Temperature Time Series.csv",row.names=FALSE)
+write.csv(africa.temp,"Africa Temperature Time Series.csv",row.names=FALSE)
+
+write.csv(globalLO.temp,"Global Land and Ocean Time Series.csv",row.names=FALSE)
+write.csv(MELO.temp.rat,"Middle East Ratio Land and Ocean Time Series.csv",row.names=FALSE)
+write.csv(AfricaLO.temp.rat,"Africa Ratio Land and Ocean Time Series.csv",row.names=FALSE)
+```
+
+

@@ -1,0 +1,775 @@
+---
+title: "Data Analysis - Global and Regional"
+date: "4/21/2024"
+output: pdf_document
+---
+
+```{r, include=FALSE}
+# knitr::opts_chunk$set(eval=FALSE)
+```
+
+```{r message = F, warning = F, echo = F}
+# Load Packages
+
+library(tidyverse)
+library(reshape2)
+library(data.table)
+library(purrr)
+library(janitor)
+library(gsubfn)
+library(huxtable)
+library(jtools)
+library(flextable)
+library(ggplot2)
+library(ggthemes)
+library(ggfortify)
+library(scales)
+library(interplot)
+library(broom)
+library(mfx)
+library(stargazer)
+library(gridExtra)
+library(grid)
+library(webshot)
+library(zoo)
+library(knitr)
+library(xtable)
+library(astsa)
+library(StanHeaders)
+library(forecast)
+library(kableExtra)
+library(vars)
+library(fGarch)
+library(ivs)
+library(clock)
+library(ggfortify)
+
+set.seed(123)
+```
+
+```{r}
+# Load Datasets
+
+## Conflict Data
+global.ts <- c("Global Conflict Data.csv")
+global.ts <- lapply(global.ts, read.csv) %>% bind_rows()
+global.ts <- ts(global.ts$x, start = c(1946, 3), frequency = 12)
+
+me.ts <- c("Middle East Conflict Data.csv")
+me.ts <- lapply(me.ts, read.csv) %>% bind_rows()
+me.ts <- ts(me.ts$x, start = c(1946, 3), frequency = 12)
+
+africa.ts <- c("Africa Conflict Data.csv")
+africa.ts <- lapply(africa.ts, read.csv) %>% bind_rows()
+africa.ts <- ts(africa.ts$x, start = c(1946, 3), frequency = 12)
+
+## Temperature Data
+global.temp <- c("Global Land and Ocean Series.csv")
+global.temp <- lapply(global.temp, read.csv) %>% bind_rows()
+global.temp <- ts(global.temp$Anomaly, start = c(1946, 3), frequency = 12)
+
+me.temp <- c("Middle East Land and Ocean Series.csv")
+me.temp <- lapply(me.temp, read.csv) %>% bind_rows()
+me.temp <- ts(me.temp$Anomaly, start = c(1946, 3), frequency = 12)
+
+africa.temp <- c("Africa Land and Ocean Series.csv")
+africa.temp <- lapply(africa.temp, read.csv) %>% bind_rows()
+africa.temp <- ts(africa.temp$Anomaly, start = c(1946, 3), frequency = 12)
+
+## Regional-Global Temperature Differences
+me.temp.diff <- me.temp-global.temp
+africa.temp.diff <- africa.temp-global.temp
+```
+
+```{r}
+# Conflict Data
+
+# Global Conflict Plots
+
+global.ts.df <- data.frame(Date = as.Date(time(global.ts)), Tally = as.numeric(global.ts))
+
+global.ts.plot <- ggplot(global.ts.df, aes(x = Date, y = Tally)) +
+  geom_line(color = "#f8766d") +
+  labs(title = "Global Conflicts 1946-2021",
+       x = "Time", y = "Number of Conflicts") +
+  scale_y_continuous(breaks = seq(0, 60, by=10), limits=c(0,55)) +
+  theme_minimal() +
+  theme(text=element_text(family="serif", size=14), plot.title = element_text(hjust = 0.5))
+global.ts.plot
+ggsave("Plots/Global Conflicts.png", global.ts.plot, width=6, height=4)
+
+
+png("Plots/Global Conflicts Monthplot.png", width = 6, height = 4, units = "in", res = 1200)
+par(family = "serif")
+monthplot(global.ts, col="#f8766d", main = "Global Conflicts 1946-2021 by Month", xlab = "Month", ylab = "Number of Conflicts", las=1)
+dev.off()
+
+
+# Middle East Conflict Plots
+
+me.ts.df <- data.frame(Date = as.Date(time(me.ts)), Tally = as.numeric(me.ts))
+
+me.ts.plot <- ggplot(me.ts.df, aes(x = Date, y = Tally)) +
+  geom_line(color = "#00ba38") +
+  labs(title = "Middle East Conflicts 1946-2021",
+       x = "Time", y = "Number of Conflicts") +
+  scale_y_continuous(breaks = seq(0, 20, by=5), limits=c(0,15)) +
+  theme_minimal() +
+  theme(text=element_text(family="serif", size=14), plot.title = element_text(hjust = 0.5))
+me.ts.plot
+ggsave("Plots/Middle East Conflicts.png", me.ts.plot, width=6, height=4)
+
+png("Plots/Middle East Conflicts Monthplot.png", width = 6, height = 4, units = "in", res = 1200)
+par(family = "serif")
+monthplot(me.ts, col="#00ba38", main = "Middle East Conflicts 1946-2021 by Month", xlab = "Month", ylab = "Number of Conflicts", las=1)
+dev.off()
+
+
+# Africa Conflict Plots
+africa.ts.df <- data.frame(Date = as.Date(time(africa.ts)), Tally = as.numeric(africa.ts))
+
+africa.ts.plot <- ggplot(africa.ts.df, aes(x = Date, y = Tally)) +
+  geom_line(color = "#619cff") +
+  labs(title = "Africa Conflicts 1946-2021",
+       x = "Time", y = "Number of Conflicts") +
+  scale_y_continuous(breaks = seq(0, 30, by=5), limits=c(0,30)) +
+  theme_minimal() +
+  theme(text=element_text(family="serif", size=14), plot.title = element_text(hjust = 0.5))
+africa.ts.plot
+ggsave("Plots/Africa Conflicts.png", africa.ts.plot, width=6, height=4)
+
+png("Plots/Africa Conflicts Monthplot.png", width = 6, height = 4, units = "in", res = 1200)
+par(family = "serif")
+monthplot(africa.ts, col="#619cff", main = "Africa Conflicts 1946-2021 by Month", xlab = "Month", ylab = "Number of Conflicts", las=1)
+dev.off()
+```
+
+```{r}
+# Temperature Data
+
+# Global Temperature Plots
+
+global.temp.df <- data.frame(Date = as.Date(time(global.temp)), Tally = as.numeric(global.temp))
+
+global.temp.plot <- ggplot(global.temp.df , aes(x = Date, y = Tally)) +
+  geom_line(color = "#f8766d") +
+  labs(title = "Global Temperature 1946-2021",
+       x = "Time", y = "Temperature (ºC)") +
+  scale_y_continuous(breaks = seq(-6, 6, by=2), limits=c(-5,5)) +
+  theme_minimal() +
+  theme(text=element_text(family="serif", size=14), plot.title = element_text(hjust = 0.5))
+global.temp.plot
+ggsave("Plots/Global Temperature.png", global.temp.plot, width=6, height=4)
+
+png("Plots/Global Temperature Monthplot.png", width = 6, height = 4, units = "in", res = 1200)
+par(family = "serif")
+monthplot(global.temp, col="#f8766d", main = "Global Temperature 1946-2021 by Month", xlab = "Month", ylab = "Temperature (ºC)", las=1)
+dev.off()
+
+
+# Middle East Temperature Plots
+
+me.temp.df <- data.frame(Date = as.Date(time(me.temp)), Tally = as.numeric(me.temp))
+
+me.temp.plot <- ggplot(me.temp.df , aes(x = Date, y = Tally)) +
+  geom_line(color = "#00ba38") +
+  labs(title = "Middle East Temperature 1946-2021",
+       x = "Time", y = "Temperature (ºC)") +
+  scale_y_continuous(breaks = seq(-6, 6, by=2), limits=c(-5,5)) +
+  theme_minimal() +
+  theme(text=element_text(family="serif", size=14), plot.title = element_text(hjust = 0.5))
+me.temp.plot
+ggsave("Plots/Middle East Temperature.png", me.temp.plot, width=6, height=4)
+
+png("Plots/Middle East Temperature Monthplot.png", width = 6, height = 4, units = "in", res = 1200)
+par(family = "serif")
+monthplot(me.temp, col="#00ba38", main = "Middle East Temperature 1946-2021 by Month", xlab = "Month", ylab = "Temperature (ºC)", las=1)
+dev.off()
+
+
+# Africa Conflict Plots
+
+africa.temp.df <- data.frame(Date = as.Date(time(africa.temp)), Tally = as.numeric(africa.temp))
+
+africa.temp.plot <- ggplot(africa.temp.df , aes(x = Date, y = Tally)) +
+  geom_line(color = "#619cff") +
+  labs(title = "Africa Temperature 1946-2021",
+       x = "Time", y = "Temperature (ºC)") +
+  scale_y_continuous(breaks = seq(-6, 6, by=2), limits=c(-5,5)) +
+  theme_minimal() +
+  theme(text=element_text(family="serif", size=14), plot.title = element_text(hjust = 0.5))
+africa.temp.plot
+ggsave("Plots/Africa Temperature.png", africa.temp.plot, width=6, height=4)
+
+png("Plots/Africa Temperature Monthplot.png", width = 6, height = 4, units = "in", res = 1200)
+par(family = "serif")
+monthplot(africa.temp, col="#619cff", main = "Africa Temperature 1946-2021 by Month", xlab = "Month", ylab = "Temperature (ºC)", las=1)
+dev.off()
+```
+
+```{r}
+# Global Analysis
+ccf(global.ts, global.temp)
+
+## SARIMA for 1946-2015 data, predicted through 2021
+global.ts15 <- global.ts[1:838]
+global.ts15 <- ts(global.ts15, start = c(1946, 3), frequency = 12)
+
+global.temp15 <- global.temp[1:838]
+global.temp15 <- ts(global.temp15, start = c(1946, 3), frequency = 12)
+
+plot.ts(global.ts15)
+plot(decompose(global.ts15))
+acf(global.ts15, 90)
+pacf(global.ts15, 90)
+
+fit.global.ts15 <- auto.arima(global.ts15, trace=T, seasonal=T, allowdrift = F, approximation=F, stepwise=F, max.order=5)
+# Gives SARIMA(1,1,1)(2,0,0)[12]
+plot(resid(fit.global.ts15), main = "Global Conflicts: Residuals of SARIMA(1,1,1)(2,0,0)[12]", ylab = "Number of Conflicts")
+acf(resid(fit.global.ts15), 90, main="Global Conflicts: ACF of SARIMA(1,1,1)(2,0,0)[12]")
+pacf(resid(fit.global.ts15), 90, main="Global Conflicts: PACF of SARIMA(1,1,1)(2,0,0)[12]")
+
+## Time series regression for 1946-2015 data, predicted through 2021
+lm.global = lm(global.ts15 ~ global.temp15, na.action = NULL)
+summary(lm.global)
+
+plot(resid(lm.global))
+monthplot(resid(lm.global))
+acf(resid(lm.global),52)
+pacf(resid(lm.global),52)
+
+# Part 1 of time series regression (with seasonality)
+global.sarima.a <- auto.arima(resid(lm.global), trace=T, seasonal=T, allowdrift=F, approximation=F, stepwise=F,
+                         max.order = 5)
+# Returns SARIMA (2,1,1)(2,0,0)[12]
+plot(resid(global.sarima.a))
+monthplot(resid(global.sarima.a))
+acf(global.sarima.a$resid, main = "ACF of Residuals", 90)
+pacf(global.sarima.a$resid, main="PACF of Residuals", 90)
+
+# Part 2 of time series regression (with seasonality)
+global.sarima.b = arima(global.ts15, order = c(2,1,1), seasonal=list(order=c(2,0,0), period=12), xreg = global.temp15, method="CSS")
+plot(resid(global.sarima.b))
+acf(global.sarima.b$resid, main = "ACF of Residuals", 90)
+pacf(global.sarima.b$resid, main="PACF of Residuals", 90)
+
+plot(global.ts15, main="Global Conflicts Over Time with Fitted Model", ylab="Number of Conflicts") 
+fit.global.ts15 = global.ts15-global.sarima.b$resid
+lines(fit.global.ts15, col="blue")
+
+plot(global.ts15, fit.global.ts15, main="Observed vs. Predicted Values of Global Conflict", xlab="Observed", ylab="Predicted", xy.labels = F, col="blue")
+points(global.ts15, fit.global.ts15, col = "blue") 
+abline(0,1)
+
+qqnorm(resid(global.sarima.b), main="Normal Q-Q Plot for SARIMA(2,1,1)(2,0,0)_12"); qqline(resid(global.sarima.b))
+
+summary(global.sarima.b)
+```
+
+```{r}
+# global.ts CCF
+# ccf(global.ts, global.temp)
+# Compute cross-correlation function
+ccf_data <- ccf(global.ts, global.temp, plot = FALSE)
+
+# Create dataframe for CCF plot
+ccf_df <- data.frame(
+  lag = ccf_data$lag,
+  ccf = ccf_data$acf
+)
+
+# Plot CCF using ggplot
+library(ggplot2)
+ccf_plot <- ggplot(data = ccf_df, aes(x = lag, y = ccf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "cornflowerblue") +
+  labs(title = "CCF of Global Conflicts and Global Temperature",
+       x = "Lag",
+       y = "Cross-correlation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(ccf_plot)
+
+# Save plot
+ggsave("Plots/CCF_Global_Time_Series_Temperature.png", ccf_plot, width = 8, height = 6, units = "in")
+
+```
+
+```{r}
+# global.ts ACF
+# Compute ACF
+# Compute ACF
+acf_data <- acf(global.ts, lag.max = 90, plot = FALSE)
+
+# Calculate confidence intervals
+alpha <- 0.05
+n <- length(global.ts)
+z_value <- qnorm(1 - alpha / 2)
+upper_ci <- z_value / sqrt(n)
+lower_ci <- -upper_ci
+
+# Create dataframe for ACF plot
+acf_df <- data.frame(
+  lag = acf_data$lag,
+  acf = acf_data$acf,
+  upper_ci = upper_ci,
+  lower_ci = lower_ci
+)
+
+# Plot ACF using ggplot
+library(ggplot2)
+acf_plot <- ggplot(data = acf_df, aes(x = lag, y = acf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "dodgerblue") +
+  geom_line(aes(y = upper_ci), linetype = "dashed", color = "firebrick1") +
+  geom_line(aes(y = lower_ci), linetype = "dashed", color = "firebrick1") +
+  labs(title = "Global Conflicts ACF",
+       x = "Lag",
+       y = "Autocorrelation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(acf_plot)
+
+# Save plot
+ggsave("Plots/ACF_Global_Time_Series.png", acf_plot, width = 8, height = 6, units = "in")
+
+
+```
+
+```{r}
+# global.ts PACF
+# Compute PACF
+pacf_data <- pacf(global.ts, lag.max = 90, plot = FALSE)
+
+# Calculate confidence intervals
+alpha <- 0.05
+n <- length(global.ts)
+z_value <- qnorm(1 - alpha / 2)
+upper_ci <- rep(z_value / sqrt(n), length(pacf_data$acf))
+lower_ci <- rep(-z_value / sqrt(n), length(pacf_data$acf))
+
+# Create dataframe for PACF plot
+pacf_df <- data.frame(
+  lag = 1:length(pacf_data$acf),
+  pacf = pacf_data$acf,
+  upper_ci = upper_ci,
+  lower_ci = lower_ci
+)
+
+# Plot PACF using ggplot
+library(ggplot2)
+pacf_plot <- ggplot(data = pacf_df, aes(x = lag, y = pacf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "dodgerblue") +
+  geom_line(aes(y = upper_ci), linetype = "dashed", color = "firebrick1") +
+  geom_line(aes(y = lower_ci), linetype = "dashed", color = "firebrick1") +
+  labs(title = "Global Conflicts PACF",
+       x = "Lag",
+       y = "Partial Autocorrelation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(pacf_plot)
+
+# Save plot
+ggsave("Plots/PACF_Global_Time_Series.png", pacf_plot, width = 8, height = 6, units = "in")
+
+```
+
+```{r}
+# Middle East Analysis
+ccf(me.ts, me.temp)
+
+## SARIMA for 1946-2015 data, predicted through 2021 (MIDDLE EAST TEMPERATURE )
+me.ts15 <- me.ts[1:838]
+me.ts15 <- ts(me.ts15, start = c(1946, 3), frequency = 12)
+
+me.temp15 <- me.temp[1:838]
+me.temp15 <- ts(me.temp15, start = c(1946, 3), frequency = 12)
+
+plot.ts(me.ts15)
+plot(decompose(me.ts15))
+acf(me.ts15, 90)
+pacf(me.ts15, 90)
+
+# SARIMA only
+fit.me.ts15 <- auto.arima(me.ts15, trace=T, seasonal=T, allowdrift = F, approximation=F, stepwise=F, max.order=5)
+# Gives SARIMA(1,1,2)(0,0,2)[12]
+plot(resid(fit.me.ts15), main = "Middle East Conflicts: Residuals of SARIMA(1,1,2)(0,0,2)[12]", ylab = "Number of Conflicts")
+acf(resid(fit.me.ts15), 90, main="Middle East Conflicts: ACF of SARIMA(1,1,2)(0,0,2)[12]")
+pacf(resid(fit.me.ts15), 90, main="Middle East Conflicts: PACF of SARIMA(1,1,2)(0,0,2)[12]")
+
+## Time series regression for 1946-2015 data, predicted through 2021
+lm.me = lm(me.ts15 ~ me.temp15, na.action = NULL)
+summary(lm.me)
+
+plot(resid(lm.me))
+monthplot(resid(lm.me))
+acf(resid(lm.me),52)
+pacf(resid(lm.me),52)
+
+# Part 1 of time series regression (with seasonality)
+me.sarima.a <- auto.arima(resid(lm.me), trace=T, seasonal=T, allowdrift=F, approximation=F, stepwise=F,
+                         max.order = 5)
+# Returns ARIMA(3,1,2)
+plot(resid(me.sarima.a))
+monthplot(resid(me.sarima.a))
+acf(me.sarima.a$resid, main = "ACF of Residuals", 90)
+pacf(me.sarima.a$resid, main="PACF of Residuals", 90)
+
+# Part 2 of time series regression (with seasonality)
+me.sarima.b = arima(me.ts15, order = c(3,1,2), xreg = me.temp15, method="CSS")
+plot(resid(me.sarima.b))
+acf(me.sarima.b$resid, main = "ACF of Residuals", 90)
+pacf(me.sarima.b$resid, main="PACF of Residuals", 90)
+
+plot(me.ts15, main="Middle East Conflicts Over Time with Fitted Model", ylab="Number of Conflicts") 
+fit.me.ts15 = me.ts15-me.sarima.b$resid
+lines(fit.me.ts15, col="blue")
+
+plot(me.ts15, fit.me.ts15, main="Observed vs. Predicted Values of Middle East Conflict", xlab="Observed", ylab="Predicted", xy.labels = F, col="blue")
+points(me.ts15, fit.me.ts15, col = "blue") 
+abline(0,1)
+
+qqnorm(resid(me.sarima.b), main="Normal Q-Q Plot for SARIMA(1,1,2)(0,0,2)_12"); qqline(resid(me.sarima.b))
+
+summary(me.sarima.b)
+
+# Forecasting through 2021
+# (me.forecast21 = predict(fit.me.ts15, n.ahead=72))
+# plot(me.ts, col="darkgray", lwd=2, ylim = c(0,15), main="Forecast of Number of Conflicts in the Middle East through 2021", ylab = "Number of Conflicts")
+# lines(me.ts15,lwd=3)
+# lines(me.forecast21$pred, col="#00ba38", lwd=2)
+# lines(me.forecast21$pred-1.96*me.forecast21$se, col="#00ba38", lty=2, lwd=3)
+# lines(me.forecast21$pred+1.96*me.forecast21$se, col="#00ba38", lty=2, lwd=3)
+# lines(simulate(fit.me.ts15, nsim=72), col="blue")
+# 
+# # Forecasting through 2031
+# fit.me.ts <- arima(me.ts,order=c(1,1,2), seasonal=list(order=c(0,0,2), period=12))
+# (me.forecast31 = predict(fit.me.ts, n.ahead=120))
+# plot(me.ts, col="darkgray", lwd=2, xlim = c(1946,2032), ylim = c(0,15), main="SARIMA Forecast of Number of Conflicts in the Middle East through 2031", ylab = "Number of Conflicts")
+# lines(me.ts,lwd=3)
+# lines(me.forecast31$pred, col="#00ba38", lwd=2)
+# lines(me.forecast31$pred-1.96*me.forecast31$se, col="#00ba38", lty=2, lwd=3)
+# lines(me.forecast31$pred+1.96*me.forecast31$se, col="#00ba38", lty=2, lwd=3)
+# lines(simulate(fit.me.ts, nsim=120), col="blue")
+
+```
+
+```{r}
+# Middle East CCF
+# ccf(me.ts, me.temp)
+# Compute CCF
+ccf_data <- ccf(me.ts, me.temp, plot = FALSE)
+
+# Create dataframe for CCF plot
+ccf_df <- data.frame(
+  lag = ccf_data$lag,
+  ccf = ccf_data$acf
+)
+
+# Plot CCF using ggplot
+library(ggplot2)
+ccf_plot <- ggplot(data = ccf_df, aes(x = lag, y = ccf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "cornflowerblue") +
+  labs(title = "CCF Middle East Temperatures and Middle East Conflicts",
+       x = "Lag",
+       y = "Cross-correlation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(ccf_plot)
+
+# Save plot
+ggsave("Plots/CCF_Middle_East_Time_Series_Temperature.png", ccf_plot, width = 8, height = 6, units = "in")
+
+```
+
+```{r}
+# ME ACF
+# plot.ts(me.ts15)
+# acf(me.ts15, 90)
+# Compute ACF
+acf_data <- acf(me.ts15, lag.max = 90, plot = FALSE)
+
+# Calculate confidence intervals
+alpha <- 0.05
+n <- length(me.ts15)
+z_value <- qnorm(1 - alpha / 2)
+upper_ci <- z_value / sqrt(n)
+lower_ci <- -upper_ci
+
+# Create dataframe for ACF plot
+acf_df <- data.frame(
+  lag = acf_data$lag,
+  acf = acf_data$acf,
+  upper_ci = upper_ci,
+  lower_ci = lower_ci
+)
+
+# Plot ACF using ggplot
+library(ggplot2)
+acf_plot <- ggplot(data = acf_df, aes(x = lag, y = acf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "dodgerblue") +
+  geom_line(aes(y = upper_ci), linetype = "dashed", color = "firebrick1") +
+  geom_line(aes(y = lower_ci), linetype = "dashed", color = "firebrick1") +
+  labs(title = "Middle East Conflicts ACF",
+       x = "Lag",
+       y = "Autocorrelation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(acf_plot)
+
+# Save plot
+ggsave("Plots/ACF_Middle_East_Time_Series.png", acf_plot, width = 8, height = 6, units = "in")
+
+```
+
+```{r}
+# ME PACF
+# pacf(me.ts15, 90)
+# Compute PACF
+pacf_data <- pacf(me.ts15, lag.max = 90, plot = FALSE)
+
+# Calculate confidence intervals
+alpha <- 0.05
+n <- length(me.ts15)
+z_value <- qnorm(1 - alpha / 2)
+upper_ci <- rep(z_value / sqrt(n), length(pacf_data$acf))
+lower_ci <- rep(-z_value / sqrt(n), length(pacf_data$acf))
+
+# Create dataframe for PACF plot
+pacf_df <- data.frame(
+  lag = 1:length(pacf_data$acf),
+  pacf = pacf_data$acf,
+  upper_ci = upper_ci,
+  lower_ci = lower_ci
+)
+
+# Plot PACF using ggplot
+library(ggplot2)
+pacf_plot <- ggplot(data = pacf_df, aes(x = lag, y = pacf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "dodgerblue") +
+  geom_line(aes(y = upper_ci), linetype = "dashed", color = "firebrick1") +
+  geom_line(aes(y = lower_ci), linetype = "dashed", color = "firebrick1") +
+  labs(title = "Middle East Conflicts PACF",
+       x = "Lag",
+       y = "Partial Autocorrelation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(pacf_plot)
+
+# Save plot
+ggsave("Plots/PACF_Middle_East_Time_Series.png", pacf_plot, width = 8, height = 6, units = "in")
+
+```
+
+```{r}
+# Africa Analysis
+ccf(africa.ts, africa.temp)
+
+## SARIMA for 1946-2015 data, predicted through 2021
+africa.ts15 <- africa.ts[1:838]
+africa.ts15 <- ts(africa.ts15, start = c(1946, 3), frequency = 12)
+
+africa.temp15 <- africa.temp[1:838]
+africa.temp15 <- ts(africa.temp15, start = c(1946, 3), frequency = 12)
+
+plot.ts(africa.ts15)
+plot(decompose(africa.ts15))
+acf(africa.ts15, 90)
+pacf(africa.ts15, 90)
+
+fit.africa.ts15 <- auto.arima(africa.ts15, trace=T, seasonal=T, allowdrift = F, approximation=F, stepwise=F, max.order=5)
+# Gives SARIMA(0,1,0)(2,0,0)[12]
+plot(resid(fit.africa.ts15), main = "Africa Conflicts: Residuals of SARIMA(0,1,0)(2,0,0)[12]", ylab = "Number of Conflicts")
+acf(resid(fit.africa.ts15), 90, main="Africa Conflicts: ACF of SARIMA(0,1,0)(2,0,0)[12]")
+pacf(resid(fit.africa.ts15), 90, main="Africa Conflicts: PACF of SARIMA(0,1,0)(2,0,0)[12]")
+
+## Time series regression for 1946-2015 data, predicted through 2021
+lm.africa = lm(africa.ts15 ~ africa.temp15, na.action = NULL)
+summary(lm.africa)
+
+plot(resid(lm.africa))
+monthplot(resid(lm.africa))
+acf(resid(lm.africa),52)
+pacf(resid(lm.africa),52)
+
+# Part 1 of time series regression (with seasonality)
+africa.sarima.a <- auto.arima(resid(lm.africa), trace=T, seasonal=T, allowdrift=F, approximation=F, stepwise=F,
+                         max.order = 5)
+# Returns ARIMA(2,1,3)
+plot(resid(africa.sarima.a))
+monthplot(resid(africa.sarima.a))
+acf(africa.sarima.a$resid, main = "ACF of Residuals", 90)
+pacf(africa.sarima.a$resid, main="PACF of Residuals", 90)
+
+# Part 2 of time series regression (with seasonality)
+africa.sarima.b = arima(africa.ts15, order = c(2,1,3), xreg = africa.temp15, method="CSS")
+plot(resid(africa.sarima.b))
+acf(africa.sarima.b$resid, main = "ACF of Residuals", 90)
+pacf(africa.sarima.b$resid, main="PACF of Residuals", 90)
+
+plot(africa.ts15, main="Africa Conflicts Over Time with Fitted Model", ylab="Number of Conflicts") 
+fit.africa.ts15 = africa.ts15-africa.sarima.b$resid
+lines(fit.africa.ts15, col="blue")
+
+plot(africa.ts15, fit.africa.ts15, main="Observed vs. Predicted Values of Africa Conflict", xlab="Observed", ylab="Predicted", xy.labels = F, col="blue")
+points(africa.ts15, fit.africa.ts15, col = "blue") 
+abline(0,1)
+
+qqnorm(resid(africa.sarima.b), main="Normal Q-Q Plot for ARIMA(2,1,3)"); qqline(resid(africa.sarima.b))
+
+summary(africa.sarima.b)
+
+# Forecasting through 2021
+(africa.forecast21 = predict(fit.africa.ts15, n.ahead=72))
+plot(africa.ts, col="darkgray", lwd=2, ylim = c(0,30), main="Forecast of Number of Conflicts in Africa through 2021", ylab = "Number of Conflicts")
+lines(africa.ts15,lwd=3)
+lines(africa.forecast21$pred, col="#619cff", lwd=2)
+lines(africa.forecast21$pred-1.96*africa.forecast21$se, col="#619cff", lty=2, lwd=3)
+lines(africa.forecast21$pred+1.96*africa.forecast21$se, col="#619cff", lty=2, lwd=3)
+lines(simulate(fit.africa.ts15, nsim=72), col="green")
+
+set.seed(1234)
+# Forecasting through 2031
+fit.africa.ts <- arima(africa.ts,order=c(0,1,0), seasonal=list(order=c(2,0,0), period=12))
+(africa.forecast31 = predict(fit.africa.ts, n.ahead=120))
+plot(africa.ts, col="darkgray", lwd=2, xlim = c(1946,2032), ylim = c(0,40), main="SARIMA Forecast of Number of Conflicts in Africa through 2031", ylab = "Number of Conflicts")
+lines(africa.ts,lwd=3)
+lines(africa.forecast31$pred, col="#619cff", lwd=2)
+lines(africa.forecast31$pred-1.96*africa.forecast31$se, col="#619cff", lty=2, lwd=3)
+lines(africa.forecast31$pred+1.96*africa.forecast31$se, col="#619cff", lty=2, lwd=3)
+lines(simulate(fit.africa.ts, nsim=120), col="green")
+```
+
+```{r}
+# ccf(africa.ts, africa.temp)
+ccf_data <- ccf(africa.ts, africa.temp, plot = FALSE)
+
+# Create dataframe for CCF plot
+ccf_df <- data.frame(
+  lag = ccf_data$lag,
+  ccf = ccf_data$acf
+)
+
+# Plot CCF using ggplot
+library(ggplot2)
+ccf_plot <- ggplot(data = ccf_df, aes(x = lag, y = ccf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "cornflowerblue") +
+  labs(title = "CCF of Africa Temperatures and Africa Conflicts",
+       x = "Lag",
+       y = "Cross-correlation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(ccf_plot)
+
+# Save plot
+ggsave("Plots/CCF_Africa_Time_Series_Temperature.png", ccf_plot, width = 8, height = 6, units = "in")
+```
+
+```{r}
+# Compute ACF
+acf_data_africa <- acf(africa.ts15, lag.max = 90, plot = FALSE)
+
+# Calculate confidence intervals
+alpha <- 0.05
+n <- length(africa.ts15)
+z_value <- qnorm(1 - alpha / 2)
+upper_ci <- z_value / sqrt(n)
+lower_ci <- -upper_ci
+
+# Create dataframe for ACF plot
+acf_df_africa <- data.frame(
+  lag = acf_data_africa$lag,
+  acf = acf_data_africa$acf,
+  upper_ci = upper_ci,
+  lower_ci = lower_ci
+)
+
+# Plot ACF using ggplot
+library(ggplot2)
+acf_plot_africa <- ggplot(data = acf_df_africa, aes(x = lag, y = acf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "dodgerblue") +
+  geom_line(aes(y = upper_ci), linetype = "dashed", color = "firebrick1") +
+  geom_line(aes(y = lower_ci), linetype = "dashed", color = "firebrick1") +
+  labs(title = "Africa Conflicts ACF",
+       x = "Lag",
+       y = "Autocorrelation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(acf_plot_africa)
+
+# Save plot
+ggsave("Plots/Africa Conflicts ACF.png", acf_plot_africa, width = 8, height = 6, units = "in")
+
+```
+
+```{r}
+# Compute PACF
+pacf_data_africa <- pacf(africa.ts15, lag.max = 90, plot = FALSE)
+
+# Calculate confidence intervals
+alpha <- 0.05
+n <- length(africa.ts15)
+z_value <- qnorm(1 - alpha / 2)
+upper_ci <- rep(z_value / sqrt(n), length(pacf_data_africa$acf))
+lower_ci <- rep(-z_value / sqrt(n), length(pacf_data_africa$acf))
+
+# Create dataframe for PACF plot
+pacf_df_africa <- data.frame(
+  lag = 1:length(pacf_data_africa$acf),
+  pacf = pacf_data_africa$acf,
+  upper_ci = upper_ci,
+  lower_ci = lower_ci
+)
+
+# Plot PACF using ggplot
+library(ggplot2)
+pacf_plot_africa <- ggplot(data = pacf_df_africa, aes(x = lag, y = pacf)) +
+  geom_hline(aes(yintercept = 0)) +
+  geom_segment(mapping = aes(xend = lag, yend = 0), color = "dodgerblue") +
+  geom_line(aes(y = upper_ci), linetype = "dashed", color = "firebrick1") +
+  geom_line(aes(y = lower_ci), linetype = "dashed", color = "firebrick1") +
+  labs(title = "Africa Conflicts PACF",
+       x = "Lag",
+       y = "Partial Autocorrelation") +
+  theme_minimal() +
+  theme(text = element_text(family = "Times New Roman"),
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5))
+
+# Display plot
+print(pacf_plot_africa)
+
+# Save plot
+ggsave("Plots/Africa Conflicts PACF.png", pacf_plot_africa, width = 8, height = 6, units = "in")
+
+
+```
